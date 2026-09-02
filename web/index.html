@@ -1,0 +1,61 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <title>Pape MUIP</title>
+  <link rel="stylesheet" href="/style.css">
+</head>
+<body>
+  <header>
+    <div><span class="brand">PAPE</span><strong>MUIP</strong><span class="muted">管理员控制台</span></div>
+    <div class="header-tools"><label>BOOI <select id="server"></select></label><span id="health" class="pill">检查中</span></div>
+  </header>
+  <div class="shell">
+    <nav>
+      <button class="nav active" data-view="players">玩家数据</button>
+      <button class="nav" data-view="accounts">SDK 账号</button>
+      <button class="nav" data-view="catalog">资源目录</button>
+      <div class="nav-note">所有业务写操作经由 SDK / BOOI Inner API 执行。名称来自只读 languages.sqlite。</div>
+    </nav>
+    <main>
+      <section id="view-players" class="view active">
+        <div class="title-row"><div><h1>玩家数据</h1><p>思念、皮肤、资产与剧情进度</p></div><button id="new-player" class="primary">新建角色</button></div>
+        <div class="split">
+          <aside class="panel list-panel">
+            <div class="search"><input id="player-query" placeholder="AccountID / OpenID / 名字"><button id="player-search">查询</button></div>
+            <div id="player-list" class="records"></div>
+          </aside>
+          <section class="panel detail-panel">
+            <div id="player-empty" class="empty">选择一个玩家查看与修改状态</div>
+            <div id="player-detail" hidden>
+              <div id="player-head"></div>
+              <div class="tabs" id="player-tabs">
+                <button data-tab="overview" class="active">概览</button><button data-tab="assets">资产</button>
+                <button data-tab="cards">思念</button><button data-tab="fashions">皮肤</button>
+                <button data-tab="progress">剧情进度</button><button data-tab="tasks">任务</button>
+              </div>
+              <div id="player-content"></div>
+            </div>
+          </section>
+        </div>
+      </section>
+
+      <section id="view-accounts" class="view">
+        <div class="title-row"><div><h1>SDK 账号</h1><p>手机号、密码、令牌与账号生命周期</p></div><button id="new-account" class="primary">创建账号</button></div>
+        <div class="panel"><div class="search"><input id="account-query" placeholder="账号 ID / 手机号"><button id="account-search">查询</button></div><div id="account-list"></div></div>
+      </section>
+
+      <section id="view-catalog" class="view">
+        <div class="title-row"><div><h1>资源目录</h1><p>本地化名称检索与一键发放</p></div></div>
+        <div class="panel">
+          <div class="search"><select id="catalog-kind"><option value="cards">思念</option><option value="fashions">皮肤</option><option value="items">物品</option><option value="stages">关卡</option><option value="tasks">任务</option><option value="unlocks">系统解锁</option><option value="guides">引导</option></select><input id="catalog-query" placeholder="搜索 ID / 配置内容"><button id="catalog-search">查询</button></div>
+          <p class="hint">一键发放需要先在“玩家数据”中选择目标玩家。</p><div id="catalog-list"></div>
+        </div>
+      </section>
+    </main>
+  </div>
+  <div id="toast"></div>
+  <script src="/app.js"></script>
+</body>
+</html>

@@ -1,0 +1,16 @@
+listen: "127.0.0.1:18080"
+admin_user: "admin"
+admin_password: "replace-with-a-long-random-password"
+language_db: "./languages.sqlite"
+language_set_id: 1000000000001
+
+sdk_inner:
+  base_url: "http://127.0.0.1:18081"
+  auth_token: "replace-with-the-sdk-inner-token"
+  timeout_seconds: 10
+
+booi_inner:
+  "500058":
+    base_url: "http://127.0.0.1:18082"
+    auth_token: "replace-with-the-booi-inner-token"
+    timeout_seconds: 10
