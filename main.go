@@ -149,6 +149,8 @@ func (s *Server) router() *gin.Engine {
 	router.GET("/api/health", s.health)
 	router.Any("/api/sdk/*path", s.sdkProxy)
 	router.Any("/api/booi/:server/*path", s.booiProxy)
+	router.POST("/api/operations/booi/:server/players/:id/full-catalog", s.fullCatalogPlayer)
+	router.POST("/api/operations/booi/:server/players/:id/import-sync", s.importSyncPlayer)
 	router.GET("/api/language/:id", s.languageLookup)
 	content, err := fs.Sub(webFiles, "web")
 	if err != nil {
