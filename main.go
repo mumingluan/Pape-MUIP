@@ -1,7 +1,6 @@
 package main
 
 import (
-	"crypto/subtle"
 	"database/sql"
 	"embed"
 	"encoding/json"
@@ -21,6 +20,7 @@ import (
 	"sync"
 	"time"
 
+	"github.com/gin-gonic/gin"
 	"gopkg.in/yaml.v3"
 	_ "modernc.org/sqlite"
 )
@@ -65,13 +65,8 @@ func main() {
 	}
 	defer language.Close()
 	server := &Server{cfg: *cfg, language: language, clients: map[string]*http.Client{}}
-	mux := http.NewServeMux()
-	mux.HandleFunc("/api/", server.api)
-	content, _ := fs.Sub(webFiles, "web")
-	mux.Handle("/", http.FileServer(http.FS(content)))
-	handler := server.authenticate(server.securityHeaders(mux))
 	log.Printf("Pape-MUIP listening on http://%s", cfg.Listen)
-	log.Fatal((&http.Server{Addr: cfg.Listen, Handler: handler, ReadHeaderTimeout: 10 * time.Second,
+	log.Fatal((&http.Server{Addr: cfg.Listen, Handler: server.router(), ReadHeaderTimeout: 10 * time.Second,
 		ReadTimeout: 30 * time.Second, WriteTimeout: 30 * time.Second, IdleTimeout: 90 * time.Second}).ListenAndServe())
 }
 
@@ -145,82 +140,87 @@ func openLanguage(path string) (*sql.DB, error) {
 	return db, nil
 }
 
-func (s *Server) authenticate(next http.Handler) http.Handler {
-	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		user, password, ok := r.BasicAuth()
-		wantUser, wantPassword := []byte(s.cfg.AdminUser), []byte(s.cfg.AdminPassword)
-		if !ok || len(user) != len(wantUser) || len(password) != len(wantPassword) || subtle.ConstantTimeCompare([]byte(user), wantUser) != 1 || subtle.ConstantTimeCompare([]byte(password), wantPassword) != 1 {
-			w.Header().Set("WWW-Authenticate", `Basic realm="Pape MUIP"`)
-			http.Error(w, "unauthorized", http.StatusUnauthorized)
-			return
-		}
-		next.ServeHTTP(w, r)
-	})
+func (s *Server) router() *gin.Engine {
+	gin.SetMode(gin.ReleaseMode)
+	router := gin.New()
+	router.Use(gin.Logger(), gin.Recovery(), s.securityHeaders(), gin.BasicAuthForRealm(gin.Accounts{
+		s.cfg.AdminUser: s.cfg.AdminPassword,
+	}, "Pape MUIP"))
+	router.GET("/api/health", s.health)
+	router.Any("/api/sdk/*path", s.sdkProxy)
+	router.Any("/api/booi/:server/*path", s.booiProxy)
+	router.GET("/api/language/:id", s.languageLookup)
+	content, err := fs.Sub(webFiles, "web")
+	if err != nil {
+		panic(fmt.Sprintf("load embedded web files: %v", err))
+	}
+	router.NoRoute(gin.WrapH(http.FileServer(http.FS(content))))
+	return router
 }
 
-func (s *Server) securityHeaders(next http.Handler) http.Handler {
-	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		w.Header().Set("X-Content-Type-Options", "nosniff")
-		w.Header().Set("X-Frame-Options", "DENY")
-		w.Header().Set("Referrer-Policy", "no-referrer")
-		w.Header().Set("Content-Security-Policy", "default-src 'self'; style-src 'self'; script-src 'self'; connect-src 'self'")
-		next.ServeHTTP(w, r)
-	})
+func (s *Server) securityHeaders() gin.HandlerFunc {
+	return func(c *gin.Context) {
+		c.Header("X-Content-Type-Options", "nosniff")
+		c.Header("X-Frame-Options", "DENY")
+		c.Header("Referrer-Policy", "no-referrer")
+		c.Header("Content-Security-Policy", "default-src 'self'; style-src 'self'; script-src 'self'; connect-src 'self'")
+		c.Next()
+	}
 }
 
-func (s *Server) api(w http.ResponseWriter, r *http.Request) {
-	path := strings.Trim(strings.TrimPrefix(r.URL.Path, "/api/"), "/")
-	parts := strings.Split(path, "/")
-	if path == "health" {
-		s.json(w, 200, map[string]any{"ok": true, "service": "pape-muip", "booi_servers": mapKeys(s.cfg.BOOI)})
-		return
-	}
-	if len(parts) >= 1 && parts[0] == "sdk" {
-		s.proxy(w, r, "sdk", s.cfg.SDK, "/inner/v1/admin/"+strings.Join(parts[1:], "/"), false)
-		return
-	}
-	if len(parts) >= 3 && parts[0] == "booi" {
-		peer, ok := s.cfg.BOOI[parts[1]]
-		if !ok {
-			s.json(w, 404, map[string]any{"error": "unknown BOOI server"})
-			return
-		}
-		upstream := "/inner/v1/admin/" + strings.Join(parts[2:], "/")
-		s.proxy(w, r, "booi:"+parts[1], peer, upstream, len(parts) >= 4 && parts[2] == "catalog")
-		return
-	}
-	if len(parts) == 2 && parts[0] == "language" {
-		id, err := strconv.ParseInt(parts[1], 10, 64)
-		if err != nil {
-			s.json(w, 400, map[string]any{"error": "invalid text id"})
-			return
-		}
-		text, _ := s.localized(id)
-		s.json(w, 200, map[string]any{"text_id": id, "text": text})
-		return
-	}
-	s.json(w, 404, map[string]any{"error": "not found"})
+func (s *Server) health(c *gin.Context) {
+	c.JSON(http.StatusOK, gin.H{"ok": true, "service": "pape-muip", "booi_servers": mapKeys(s.cfg.BOOI)})
 }
 
-func (s *Server) proxy(w http.ResponseWriter, r *http.Request, key string, peer Peer, path string, localize bool) {
+func (s *Server) sdkProxy(c *gin.Context) {
+	path := strings.TrimPrefix(c.Param("path"), "/")
+	s.proxy(c, "sdk", s.cfg.SDK, "/inner/v1/admin/"+path, false)
+}
+
+func (s *Server) booiProxy(c *gin.Context) {
+	serverID := c.Param("server")
+	peer, ok := s.cfg.BOOI[serverID]
+	if !ok {
+		c.JSON(http.StatusNotFound, gin.H{"error": "unknown BOOI server"})
+		return
+	}
+	path := strings.TrimPrefix(c.Param("path"), "/")
+	s.proxy(c, "booi:"+serverID, peer, "/inner/v1/admin/"+path, strings.HasPrefix(path, "catalog/"))
+}
+
+func (s *Server) languageLookup(c *gin.Context) {
+	id, err := strconv.ParseInt(c.Param("id"), 10, 64)
+	if err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "invalid text id"})
+		return
+	}
+	text, err := s.localized(id)
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		return
+	}
+	c.JSON(http.StatusOK, gin.H{"text_id": id, "text": text})
+}
+
+func (s *Server) proxy(c *gin.Context, key string, peer Peer, path string, localize bool) {
 	base, err := url.Parse(strings.TrimRight(peer.BaseURL, "/"))
 	if err != nil {
-		s.json(w, 500, map[string]any{"error": err.Error()})
+		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 		return
 	}
 	base.Path = path
-	base.RawQuery = r.URL.RawQuery
+	base.RawQuery = c.Request.URL.RawQuery
 	var body io.Reader
-	if r.Body != nil {
-		body = io.LimitReader(r.Body, 4<<20)
+	if c.Request.Body != nil {
+		body = io.LimitReader(c.Request.Body, 4<<20)
 	}
-	req, err := http.NewRequestWithContext(r.Context(), r.Method, base.String(), body)
+	req, err := http.NewRequestWithContext(c.Request.Context(), c.Request.Method, base.String(), body)
 	if err != nil {
-		s.json(w, 500, map[string]any{"error": err.Error()})
+		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 		return
 	}
 	req.Header.Set("Authorization", "Bearer "+peer.AuthToken)
-	if ct := r.Header.Get("Content-Type"); ct != "" {
+	if ct := c.GetHeader("Content-Type"); ct != "" {
 		req.Header.Set("Content-Type", ct)
 	}
 	s.clientsMu.Lock()
@@ -236,13 +236,13 @@ func (s *Server) proxy(w http.ResponseWriter, r *http.Request, key string, peer 
 	s.clientsMu.Unlock()
 	resp, err := client.Do(req)
 	if err != nil {
-		s.json(w, 502, map[string]any{"error": err.Error()})
+		c.JSON(http.StatusBadGateway, gin.H{"error": err.Error()})
 		return
 	}
 	defer resp.Body.Close()
 	data, err := io.ReadAll(io.LimitReader(resp.Body, 16<<20))
 	if err != nil {
-		s.json(w, 502, map[string]any{"error": err.Error()})
+		c.JSON(http.StatusBadGateway, gin.H{"error": err.Error()})
 		return
 	}
 	if localize && resp.StatusCode < 300 {
@@ -250,11 +250,11 @@ func (s *Server) proxy(w http.ResponseWriter, r *http.Request, key string, peer 
 	}
 	for _, name := range []string{"Content-Type"} {
 		if value := resp.Header.Get(name); value != "" {
-			w.Header().Set(name, value)
+			c.Header(name, value)
 		}
 	}
-	w.WriteHeader(resp.StatusCode)
-	_, _ = w.Write(data)
+	c.Status(resp.StatusCode)
+	_, _ = c.Writer.Write(data)
 }
 
 func (s *Server) localized(id int64) (string, error) {
@@ -339,9 +339,4 @@ func mapKeys(values map[string]Peer) []string {
 	}
 	sort.Strings(out)
 	return out
-}
-func (s *Server) json(w http.ResponseWriter, status int, value any) {
-	w.Header().Set("Content-Type", "application/json; charset=utf-8")
-	w.WriteHeader(status)
-	_ = json.NewEncoder(w).Encode(value)
 }

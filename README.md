@@ -1,6 +1,6 @@
 # Pape-MUIP
 
-Pape-MUIP 是 Pape-SDK 与 Pape-BOOI 的管理员 Web 控制台。MUIP 不打开 SDK/BOOI
+Pape-MUIP 是使用 Gin 构建的 Pape-SDK 与 Pape-BOOI 管理员 Web 控制台。MUIP 不打开 SDK/BOOI
 业务数据库：账号操作全部经 SDK Inner API，玩家操作全部经相应 BOOI Inner API。
 MUIP 唯一直接读取的数据库是本目录的 `languages.sqlite`，且以 SQLite
 `mode=ro&immutable=1` 打开，用于把资源配置中的文本 ID 解析成本地化名称。

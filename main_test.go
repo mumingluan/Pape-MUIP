@@ -37,23 +37,26 @@ func TestCatalogProxyAddsLocalizedNameAndUsesInnerAuth(t *testing.T) {
 		t.Fatal(err)
 	}
 	defer language.Close()
-	s := &Server{cfg: Config{LanguageSetID: 1000000000001, BOOI: map[string]Peer{"500058": {BaseURL: upstream.URL, AuthToken: "inner-secret"}}}, language: language, clients: map[string]*http.Client{}}
+	s := &Server{cfg: Config{AdminUser: "admin", AdminPassword: "secret", LanguageSetID: 1000000000001,
+		SDK:  Peer{BaseURL: upstream.URL, AuthToken: "sdk-secret"},
+		BOOI: map[string]Peer{"500058": {BaseURL: upstream.URL, AuthToken: "inner-secret"}}}, language: language, clients: map[string]*http.Client{}}
 	recorder := httptest.NewRecorder()
 	request := httptest.NewRequest(http.MethodGet, "/api/booi/500058/catalog/cards", nil)
-	s.api(recorder, request)
+	request.SetBasicAuth("admin", "secret")
+	s.router().ServeHTTP(recorder, request)
 	if recorder.Code != http.StatusOK || !strings.Contains(recorder.Body.String(), `"localized_name":"比心"`) {
 		t.Fatalf("response=%d %s", recorder.Code, recorder.Body.String())
 	}
 }
 
 func TestBasicAuthenticationProtectsUIAndAPI(t *testing.T) {
-	s := &Server{cfg: Config{AdminUser: "admin", AdminPassword: "secret"}}
-	handler := s.authenticate(http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) { w.WriteHeader(http.StatusNoContent) }))
+	s := &Server{cfg: Config{AdminUser: "admin", AdminPassword: "secret", BOOI: map[string]Peer{}}}
+	handler := s.router()
 	for _, test := range []struct {
 		user, password string
 		want           int
-	}{{want: 401}, {user: "admin", password: "wrong", want: 401}, {user: "admin", password: "secret", want: 204}} {
-		req := httptest.NewRequest(http.MethodGet, "/", nil)
+	}{{want: 401}, {user: "admin", password: "wrong", want: 401}, {user: "admin", password: "secret", want: 200}} {
+		req := httptest.NewRequest(http.MethodGet, "/api/health", nil)
 		if test.user != "" {
 			req.SetBasicAuth(test.user, test.password)
 		}
@@ -62,6 +65,20 @@ func TestBasicAuthenticationProtectsUIAndAPI(t *testing.T) {
 		if res.Code != test.want {
 			t.Fatalf("auth %q status=%d want=%d", test.user, res.Code, test.want)
 		}
+		if res.Header().Get("X-Frame-Options") != "DENY" {
+			t.Fatal("security headers are missing")
+		}
+	}
+}
+
+func TestGinRouterServesEmbeddedUI(t *testing.T) {
+	s := &Server{cfg: Config{AdminUser: "admin", AdminPassword: "secret"}}
+	req := httptest.NewRequest(http.MethodGet, "/", nil)
+	req.SetBasicAuth("admin", "secret")
+	res := httptest.NewRecorder()
+	s.router().ServeHTTP(res, req)
+	if res.Code != http.StatusOK || !strings.Contains(res.Body.String(), "Pape MUIP") {
+		t.Fatalf("embedded UI response=%d %q", res.Code, res.Body.String())
 	}
 }
 
