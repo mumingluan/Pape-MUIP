@@ -13,6 +13,7 @@ MUIP 唯一直接读取的数据库是本目录的 `languages.sqlite`，且以 S
 - 由 MUIP 遍历当前 BOOI 资源目录并生成普通发放列表，将账号补齐为当前资源版本的完整账号；
 - 资产、思念、皮肤、任务、关卡、引导、系统解锁、男主羁绊和主线进度管理；
 - 从 BOOI 资源目录检索思念、皮肤、物品等，并通过 `languages.sqlite` 显示中文名；
+- 使用独立 HTML 登录页和 HttpOnly/SameSite 会话 Cookie，界面自动跟随系统深浅色；
 - BOOI GM 写入成功后尽可能向在线客户端发送协议原生 UpdateReply，API 返回
   `notified` 表示实际通知的在线会话数。没有独立增量协议的状态由下次 Sync 恢复。
 
@@ -33,8 +34,8 @@ go build -o pape-muip.exe .
 .\pape-muip.exe -config .\config.yaml
 ```
 
-浏览器访问 `http://127.0.0.1:65286`，使用 `admin_user` / `admin_password` 的 HTTP
-Basic Auth 登录。默认仅监听回环地址；跨主机部署应放在受信网络后并使用 HTTPS/mTLS。
+浏览器访问 `http://127.0.0.1:65286`，在登录页输入 `admin_user` / `admin_password`。
+默认仅监听回环地址；跨主机部署应放在受信网络后并使用 HTTPS/mTLS。
 
 ## Inner API 约定
 

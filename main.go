@@ -7,6 +7,7 @@ import (
 	"errors"
 	"flag"
 	"fmt"
+	"html/template"
 	"io"
 	"io/fs"
 	"log"
@@ -46,10 +47,13 @@ type Config struct {
 }
 
 type Server struct {
-	cfg       Config
-	language  *sql.DB
-	clientsMu sync.Mutex
-	clients   map[string]*http.Client
+	cfg           Config
+	language      *sql.DB
+	clientsMu     sync.Mutex
+	clients       map[string]*http.Client
+	sessionsMu    sync.Mutex
+	sessions      map[string]time.Time
+	loginTemplate *template.Template
 }
 
 func main() {
@@ -143,20 +147,29 @@ func openLanguage(path string) (*sql.DB, error) {
 func (s *Server) router() *gin.Engine {
 	gin.SetMode(gin.ReleaseMode)
 	router := gin.New()
-	router.Use(gin.Logger(), gin.Recovery(), s.securityHeaders(), gin.BasicAuthForRealm(gin.Accounts{
-		s.cfg.AdminUser: s.cfg.AdminPassword,
-	}, "Pape MUIP"))
-	router.GET("/api/health", s.health)
-	router.Any("/api/sdk/*path", s.sdkProxy)
-	router.Any("/api/booi/:server/*path", s.booiProxy)
-	router.POST("/api/operations/booi/:server/players/:id/full-catalog", s.fullCatalogPlayer)
-	router.POST("/api/operations/booi/:server/players/:id/import-sync", s.importSyncPlayer)
-	router.GET("/api/language/:id", s.languageLookup)
+	router.Use(gin.Logger(), gin.Recovery(), s.securityHeaders())
 	content, err := fs.Sub(webFiles, "web")
 	if err != nil {
 		panic(fmt.Sprintf("load embedded web files: %v", err))
 	}
-	router.NoRoute(gin.WrapH(http.FileServer(http.FS(content))))
+	s.loginTemplate = template.Must(template.ParseFS(webFiles, "web/login.html"))
+	if s.sessions == nil {
+		s.sessions = make(map[string]time.Time)
+	}
+	publicFiles := http.FS(content)
+	router.GET("/login", s.loginPage)
+	router.POST("/login", s.login)
+	router.GET("/style.css", func(c *gin.Context) { c.FileFromFS("style.css", publicFiles) })
+
+	protected := router.Group("/", s.requireSession())
+	protected.POST("/logout", s.logout)
+	protected.GET("/api/health", s.health)
+	protected.Any("/api/sdk/*path", s.sdkProxy)
+	protected.Any("/api/booi/:server/*path", s.booiProxy)
+	protected.POST("/api/operations/booi/:server/players/:id/full-catalog", s.fullCatalogPlayer)
+	protected.POST("/api/operations/booi/:server/players/:id/import-sync", s.importSyncPlayer)
+	protected.GET("/api/language/:id", s.languageLookup)
+	router.NoRoute(s.requireSession(), gin.WrapH(http.FileServer(publicFiles)))
 	return router
 }
 

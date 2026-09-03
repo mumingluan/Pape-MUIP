@@ -3,13 +3,14 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width,initial-scale=1">
+  <meta name="color-scheme" content="light dark">
   <title>Pape MUIP</title>
   <link rel="stylesheet" href="/style.css">
 </head>
 <body>
   <header>
     <div><span class="brand">PAPE</span><strong>MUIP</strong><span class="muted">管理员控制台</span></div>
-    <div class="header-tools"><label>BOOI <select id="server"></select></label><span id="health" class="pill">检查中</span></div>
+    <div class="header-tools"><label>BOOI <select id="server"></select></label><span id="health" class="pill">检查中</span><form class="logout-form" method="post" action="/logout"><button class="small" type="submit">退出</button></form></div>
   </header>
   <div class="shell">
     <nav>

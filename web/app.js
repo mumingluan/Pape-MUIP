@@ -1,6 +1,6 @@
 const $=s=>document.querySelector(s), $$=s=>[...document.querySelectorAll(s)];
 const state={server:'',player:null,data:null,tab:'overview'};
-async function api(path,opts={}){const headers=opts.body instanceof FormData?{}:{'Content-Type':'application/json'};const res=await fetch('/api/'+path,{headers,...opts});let data=null;const text=await res.text();try{data=text?JSON.parse(text):null}catch{data={error:text}}if(!res.ok)throw new Error(data?.error||`${res.status} ${res.statusText}`);return data}
+async function api(path,opts={}){const headers=opts.body instanceof FormData?{}:{'Content-Type':'application/json'};const res=await fetch('/api/'+path,{headers,...opts});if(res.status===401){location.assign('/login');throw new Error('登录已失效')}let data=null;const text=await res.text();try{data=text?JSON.parse(text):null}catch{data={error:text}}if(!res.ok)throw new Error(data?.error||`${res.status} ${res.statusText}`);return data}
 function toast(message,error=false){const el=$('#toast');el.textContent=message;el.className=error?'show error':'show';clearTimeout(el.t);el.t=setTimeout(()=>el.className='',3200)}
 function serverPath(path){return `booi/${encodeURIComponent(state.server)}/${path}`}
 function esc(v){return String(v??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]))}
