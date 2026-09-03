@@ -57,6 +57,14 @@
       </section>
     </main>
   </div>
+  <dialog id="app-modal" aria-labelledby="modal-title">
+    <form id="modal-form" class="modal-form">
+      <div class="modal-heading"><h2 id="modal-title"></h2><button id="modal-close" class="modal-close" type="button" aria-label="关闭">×</button></div>
+      <p id="modal-message" class="modal-message" hidden></p>
+      <div id="modal-fields" class="modal-fields"></div>
+      <div class="modal-actions"><button id="modal-cancel" type="button">取消</button><button id="modal-submit" class="primary" type="submit">确定</button></div>
+    </form>
+  </dialog>
   <div id="toast"></div>
   <script src="/app.js"></script>
 </body>
