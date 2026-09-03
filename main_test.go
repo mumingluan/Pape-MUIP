@@ -114,12 +114,22 @@ func TestHTMLLoginSessionProtectsUIAndAPI(t *testing.T) {
 func TestGinRouterServesEmbeddedUI(t *testing.T) {
 	s := &Server{cfg: Config{AdminUser: "admin", AdminPassword: "secret"}}
 	handler := s.router()
+	cookie := loginCookie(t, handler)
 	req := httptest.NewRequest(http.MethodGet, "/", nil)
-	req.AddCookie(loginCookie(t, handler))
+	req.AddCookie(cookie)
 	res := httptest.NewRecorder()
 	handler.ServeHTTP(res, req)
 	if res.Code != http.StatusOK || !strings.Contains(res.Body.String(), "Pape MUIP") {
 		t.Fatalf("embedded UI response=%d %q", res.Code, res.Body.String())
+	}
+	scriptReq := httptest.NewRequest(http.MethodGet, "/app.js", nil)
+	scriptReq.AddCookie(cookie)
+	scriptRes := httptest.NewRecorder()
+	handler.ServeHTTP(scriptRes, scriptReq)
+	for _, marker := range []string{"createSearchSelect", "resourceOptions('items'", "resourceOptions('cards'", "resourceOptions('stages'", "resourceOptions('tasks'"} {
+		if scriptRes.Code != http.StatusOK || !strings.Contains(scriptRes.Body.String(), marker) {
+			t.Fatalf("embedded searchable selectors missing %q: response=%d", marker, scriptRes.Code)
+		}
 	}
 }
 
