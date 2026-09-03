@@ -60,6 +60,8 @@ body {
   color: var(--text);
 }
 
+[hidden] { display: none !important; }
+
 header {
   height: 64px;
   border-bottom: 1px solid var(--line);
