@@ -216,6 +216,7 @@ dialog::backdrop { background: rgba(15, 18, 30, .48); backdrop-filter: blur(4px)
 .modal-search-select > input { padding-right: 34px; background-image: linear-gradient(45deg, transparent 50%, var(--muted) 50%), linear-gradient(135deg, var(--muted) 50%, transparent 50%); background-position: calc(100% - 17px) 50%, calc(100% - 12px) 50%; background-size: 5px 5px, 5px 5px; background-repeat: no-repeat; }
 .modal-search-select > input:read-only { cursor: default; opacity: .78; }
 .modal-search-menu { position: absolute; z-index: 20; top: calc(100% + 5px); left: 0; right: 0; max-height: 250px; overflow: auto; padding: 5px; background: var(--panel); border: 1px solid var(--line-strong); border-radius: 10px; box-shadow: 0 14px 36px var(--overlay-shadow); }
+.modal-search-menu.up { top: auto; bottom: calc(100% + 5px); }
 .modal-search-menu button { display: block; width: 100%; padding: 9px 10px; border: 0; border-radius: 7px; background: transparent; color: var(--text); text-align: left; line-height: 1.35; }
 .modal-search-menu button:hover, .modal-search-menu button.active { background: var(--record-hover); }
 .modal-search-empty { padding: 14px 10px; color: var(--muted); text-align: center; }
