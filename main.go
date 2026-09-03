@@ -325,6 +325,8 @@ func (s *Server) localizeCatalog(data []byte) []byte {
 		id := number(row["name_text_id"])
 		if names[id] != "" {
 			row["localized_name"] = names[id]
+		} else if fallback, _ := row["fallback_name"].(string); fallback != "" {
+			row["localized_name"] = fallback
 		}
 	}
 	encoded, err := json.Marshal(payload)

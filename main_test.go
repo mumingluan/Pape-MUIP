@@ -17,7 +17,7 @@ func TestCatalogProxyAddsLocalizedNameAndUsesInnerAuth(t *testing.T) {
 			t.Fatalf("unexpected upstream request: %s auth=%q", r.URL.Path, r.Header.Get("Authorization"))
 		}
 		w.Header().Set("Content-Type", "application/json")
-		_, _ = w.Write([]byte(`{"rows":[{"id":"111101","name_text_id":373240,"raw":{}}]}`))
+		_, _ = w.Write([]byte(`{"rows":[{"id":"111101","name_text_id":373240,"raw":{}},{"id":"3","fallback_name":"体力","raw":{}}]}`))
 	}))
 	defer upstream.Close()
 
@@ -47,7 +47,7 @@ func TestCatalogProxyAddsLocalizedNameAndUsesInnerAuth(t *testing.T) {
 	request := httptest.NewRequest(http.MethodGet, "/api/booi/500058/catalog/cards", nil)
 	request.AddCookie(cookie)
 	handler.ServeHTTP(recorder, request)
-	if recorder.Code != http.StatusOK || !strings.Contains(recorder.Body.String(), `"localized_name":"比心"`) {
+	if recorder.Code != http.StatusOK || !strings.Contains(recorder.Body.String(), `"localized_name":"比心"`) || !strings.Contains(recorder.Body.String(), `"localized_name":"体力"`) {
 		t.Fatalf("response=%d %s", recorder.Code, recorder.Body.String())
 	}
 }
