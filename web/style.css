@@ -189,6 +189,10 @@ table { border-collapse: collapse; width: 100%; font-size: 13px; }
 th, td { text-align: left; padding: 9px 8px; border-bottom: 1px solid var(--line); vertical-align: middle; }
 th { color: var(--muted); font-weight: 500; position: sticky; top: 0; background: var(--panel2); }
 .table-wrap { max-height: 550px; overflow: auto; }
+.table-pager { display: grid; grid-template-columns: minmax(260px, 1fr) auto auto; align-items: center; gap: 12px; margin: 12px 0 6px; padding: 9px 10px; background: var(--record-bg); border: 1px solid var(--line); border-radius: 9px; color: var(--muted); font-size: 12px; }
+.table-filter { display: flex; gap: 7px; min-width: 0; }
+.table-filter input { width: min(320px, 100%); min-width: 0; }
+.table-pager button:disabled { opacity: .42; cursor: default; }
 .pill { display: inline-block; border: 1px solid var(--line-strong); background: var(--record-bg); border-radius: 999px; padding: 4px 9px; font-size: 11px; color: var(--muted); }
 .pill.ok { color: var(--ok); border-color: color-mix(in srgb, var(--ok) 55%, var(--line)); }
 .hint { font-size: 12px; margin: 0 0 13px; }
@@ -278,4 +282,5 @@ dialog.editor-modal { height: min(720px, calc(100vh - 40px)); height: min(720px,
   main { padding: 16px; }
   .header-tools { gap: 8px; }
   .header-tools label { display: none; }
+  .table-pager { grid-template-columns: 1fr; }
 }

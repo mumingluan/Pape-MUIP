@@ -1,7 +1,9 @@
 package main
 
 import (
+	"compress/gzip"
 	"database/sql"
+	"io"
 	"net/http"
 	"net/http/httptest"
 	"net/url"
@@ -111,6 +113,34 @@ func TestHTMLLoginSessionProtectsUIAndAPI(t *testing.T) {
 	}
 }
 
+func TestGinRouterCompressesResponses(t *testing.T) {
+	s := &Server{cfg: Config{AdminUser: "admin", AdminPassword: "secret", BOOI: map[string]Peer{}}}
+	handler := s.router()
+	cookie := loginCookie(t, handler)
+	req := httptest.NewRequest(http.MethodGet, "/app.js", nil)
+	req.Header.Set("Accept-Encoding", "gzip")
+	req.AddCookie(cookie)
+	res := httptest.NewRecorder()
+	handler.ServeHTTP(res, req)
+	if res.Code != http.StatusOK || res.Header().Get("Content-Encoding") != "gzip" {
+		t.Fatalf("compressed response=%d encoding=%q", res.Code, res.Header().Get("Content-Encoding"))
+	}
+	reader, err := gzip.NewReader(res.Body)
+	if err != nil {
+		t.Fatal(err)
+	}
+	body, err := io.ReadAll(reader)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if err := reader.Close(); err != nil {
+		t.Fatal(err)
+	}
+	if !strings.Contains(string(body), "PAGE_SIZE=100") {
+		t.Fatal("compressed script body is invalid")
+	}
+}
+
 func TestGinRouterServesEmbeddedUI(t *testing.T) {
 	s := &Server{cfg: Config{AdminUser: "admin", AdminPassword: "secret"}}
 	handler := s.router()
@@ -126,7 +156,7 @@ func TestGinRouterServesEmbeddedUI(t *testing.T) {
 	scriptReq.AddCookie(cookie)
 	scriptRes := httptest.NewRecorder()
 	handler.ServeHTTP(scriptRes, scriptReq)
-	for _, marker := range []string{"createSearchSelect", "resourceOptions('items'", "resourceOptions('cards'", "resourceOptions('stages'", "resourceOptions('tasks'"} {
+	for _, marker := range []string{"createSearchSelect", "PAGE_SIZE=100", "pagedRows", "resourceOptions('items'", "resourceOptions('cards'", "resourceOptions('stages'", "resourceOptions('tasks'"} {
 		if scriptRes.Code != http.StatusOK || !strings.Contains(scriptRes.Body.String(), marker) {
 			t.Fatalf("embedded searchable selectors missing %q: response=%d", marker, scriptRes.Code)
 		}

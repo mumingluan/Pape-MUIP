@@ -1,6 +1,7 @@
 package main
 
 import (
+	"compress/gzip"
 	"database/sql"
 	"embed"
 	"encoding/json"
@@ -147,7 +148,7 @@ func openLanguage(path string) (*sql.DB, error) {
 func (s *Server) router() *gin.Engine {
 	gin.SetMode(gin.ReleaseMode)
 	router := gin.New()
-	router.Use(gin.Logger(), gin.Recovery(), s.securityHeaders())
+	router.Use(gin.Logger(), gin.Recovery(), s.securityHeaders(), gzipResponses())
 	content, err := fs.Sub(webFiles, "web")
 	if err != nil {
 		panic(fmt.Sprintf("load embedded web files: %v", err))
@@ -171,6 +172,46 @@ func (s *Server) router() *gin.Engine {
 	protected.GET("/api/language/:id", s.languageLookup)
 	router.NoRoute(s.requireSession(), gin.WrapH(http.FileServer(publicFiles)))
 	return router
+}
+
+type gzipResponseWriter struct {
+	gin.ResponseWriter
+	writer *gzip.Writer
+}
+
+func (w *gzipResponseWriter) Write(data []byte) (int, error) {
+	w.Header().Del("Content-Length")
+	return w.writer.Write(data)
+}
+
+func (w *gzipResponseWriter) WriteString(data string) (int, error) {
+	w.Header().Del("Content-Length")
+	return w.writer.Write([]byte(data))
+}
+
+func (w *gzipResponseWriter) WriteHeader(statusCode int) {
+	w.Header().Del("Content-Length")
+	w.ResponseWriter.WriteHeader(statusCode)
+}
+
+func (w *gzipResponseWriter) Flush() {
+	_ = w.writer.Flush()
+	w.ResponseWriter.Flush()
+}
+
+func gzipResponses() gin.HandlerFunc {
+	return func(c *gin.Context) {
+		if c.Request.Method == http.MethodHead || !strings.Contains(c.GetHeader("Accept-Encoding"), "gzip") {
+			c.Next()
+			return
+		}
+		c.Header("Content-Encoding", "gzip")
+		c.Header("Vary", "Accept-Encoding")
+		writer := gzip.NewWriter(c.Writer)
+		c.Writer = &gzipResponseWriter{ResponseWriter: c.Writer, writer: writer}
+		c.Next()
+		_ = writer.Close()
+	}
 }
 
 func (s *Server) securityHeaders() gin.HandlerFunc {
