@@ -11,6 +11,28 @@ import (
 	"github.com/gin-gonic/gin"
 )
 
+var reportReasonTextIDs = map[int64]int64{
+	1:  567402,
+	2:  567403,
+	3:  549608,
+	4:  549609,
+	5:  549610,
+	6:  309322,
+	7:  567404,
+	8:  549613,
+	9:  549614,
+	10: 549615,
+}
+
+var reportSourceNames = map[int64]string{
+	101: "玩家资料页",
+}
+
+var reportPlatformNames = map[int64]string{
+	1: "iOS",
+	2: "Android",
+}
+
 func (s *App) languageLookup(c *gin.Context) {
 	id, err := strconv.ParseInt(c.Param("id"), 10, 64)
 	if err != nil {
@@ -87,6 +109,62 @@ func (s *App) localizeCatalog(data []byte) []byte {
 		return data
 	}
 	return encoded
+}
+
+func (s *App) localizeReports(data []byte) []byte {
+	var payload map[string]any
+	if json.Unmarshal(data, &payload) != nil {
+		return data
+	}
+	reports, ok := payload["reports"].([]any)
+	if !ok {
+		return data
+	}
+	localized := make(map[int64]string, len(reportReasonTextIDs))
+	for reasonID, textID := range reportReasonTextIDs {
+		text, err := s.localized(textID)
+		if err == nil && text != "" {
+			localized[reasonID] = stripRichText(text)
+		}
+	}
+	for _, raw := range reports {
+		report, _ := raw.(map[string]any)
+		reasonID := number(report["reason_id"])
+		sourceID := number(report["source"])
+		platformID := number(report["platform"])
+		if name := localized[reasonID]; name != "" {
+			report["reason_name"] = name
+		}
+		if name := reportSourceNames[sourceID]; name != "" {
+			report["source_name"] = name
+		}
+		if name := reportPlatformNames[platformID]; name != "" {
+			report["platform_name"] = name
+		}
+	}
+	encoded, err := json.Marshal(payload)
+	if err != nil {
+		return data
+	}
+	return encoded
+}
+
+func stripRichText(value string) string {
+	var result strings.Builder
+	inTag := false
+	for _, char := range value {
+		switch char {
+		case '<':
+			inTag = true
+		case '>':
+			inTag = false
+		default:
+			if !inTag {
+				result.WriteRune(char)
+			}
+		}
+	}
+	return result.String()
 }
 
 func number(v any) int64 {

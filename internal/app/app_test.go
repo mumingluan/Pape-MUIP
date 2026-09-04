@@ -55,6 +55,49 @@ func TestCatalogProxyAddsLocalizedNameAndUsesInnerAuth(t *testing.T) {
 	}
 }
 
+func TestReportProxyAddsLocalizedMetadata(t *testing.T) {
+	upstream := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		if r.URL.Path != "/inner/v1/admin/reports" || r.Header.Get("Authorization") != "Bearer sdk-secret" {
+			t.Fatalf("unexpected upstream request: %s auth=%q", r.URL.Path, r.Header.Get("Authorization"))
+		}
+		w.Header().Set("Content-Type", "application/json")
+		_, _ = w.Write([]byte(`{"total":1,"reports":[{"reason_id":7,"source":101,"platform":2}]}`))
+	}))
+	defer upstream.Close()
+
+	dbPath := filepath.Join(t.TempDir(), "languages.sqlite")
+	db, err := sql.Open("sqlite", dbPath)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if _, err := db.Exec(`create table localized_text(resource_set_id integer, text_id integer, text text, package_id integer,
+		primary key(resource_set_id,text_id)); insert into localized_text values(1000000000001,567404,'个人信息违规',1)`); err != nil {
+		t.Fatal(err)
+	}
+	if err := db.Close(); err != nil {
+		t.Fatal(err)
+	}
+	language, err := openLanguage(dbPath)
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer language.Close()
+	s := &App{cfg: config.Config{AdminUser: "admin", AdminPassword: "secret", LanguageSetID: 1000000000001,
+		SDK: config.Peer{BaseURL: upstream.URL, AuthToken: "sdk-secret"}}, language: language, clients: map[string]*http.Client{}}
+	handler := s.router()
+	cookie := loginCookie(t, handler)
+	recorder := httptest.NewRecorder()
+	request := httptest.NewRequest(http.MethodGet, "/api/sdk/reports?limit=50", nil)
+	request.AddCookie(cookie)
+	handler.ServeHTTP(recorder, request)
+	body := recorder.Body.String()
+	for _, expected := range []string{`"reason_name":"个人信息违规"`, `"source_name":"玩家资料页"`, `"platform_name":"Android"`} {
+		if recorder.Code != http.StatusOK || !strings.Contains(body, expected) {
+			t.Fatalf("localized report missing %s: response=%d %s", expected, recorder.Code, body)
+		}
+	}
+}
+
 func TestHTMLLoginSessionProtectsUIAndAPI(t *testing.T) {
 	s := &App{cfg: config.Config{AdminUser: "admin", AdminPassword: "secret", BOOI: map[string]config.Peer{}}}
 	handler := s.router()

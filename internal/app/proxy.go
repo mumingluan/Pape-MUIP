@@ -19,7 +19,11 @@ func (s *App) health(c *gin.Context) {
 
 func (s *App) sdkProxy(c *gin.Context) {
 	path := strings.TrimPrefix(c.Param("path"), "/")
-	s.proxy(c, "sdk", s.cfg.SDK, "/inner/v1/admin/"+path, false)
+	var transform func([]byte) []byte
+	if path == "reports" {
+		transform = s.localizeReports
+	}
+	s.proxy(c, "sdk", s.cfg.SDK, "/inner/v1/admin/"+path, transform)
 }
 
 func (s *App) booiProxy(c *gin.Context) {
@@ -30,10 +34,14 @@ func (s *App) booiProxy(c *gin.Context) {
 		return
 	}
 	path := strings.TrimPrefix(c.Param("path"), "/")
-	s.proxy(c, "booi:"+serverID, peer, "/inner/v1/admin/"+path, strings.HasPrefix(path, "catalog/"))
+	var transform func([]byte) []byte
+	if strings.HasPrefix(path, "catalog/") {
+		transform = s.localizeCatalog
+	}
+	s.proxy(c, "booi:"+serverID, peer, "/inner/v1/admin/"+path, transform)
 }
 
-func (s *App) proxy(c *gin.Context, key string, peer config.Peer, path string, localize bool) {
+func (s *App) proxy(c *gin.Context, key string, peer config.Peer, path string, transform func([]byte) []byte) {
 	base, err := url.Parse(strings.TrimRight(peer.BaseURL, "/"))
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
@@ -76,8 +84,8 @@ func (s *App) proxy(c *gin.Context, key string, peer config.Peer, path string, l
 		c.JSON(http.StatusBadGateway, gin.H{"error": err.Error()})
 		return
 	}
-	if localize && resp.StatusCode < 300 {
-		data = s.localizeCatalog(data)
+	if transform != nil && resp.StatusCode < 300 {
+		data = transform(data)
 	}
 	if value := resp.Header.Get("Content-Type"); value != "" {
 		c.Header("Content-Type", value)

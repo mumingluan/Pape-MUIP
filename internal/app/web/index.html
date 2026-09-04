@@ -35,6 +35,10 @@
         <svg class="nav-icon" viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect width="18" height="11" x="3" y="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>
         <span>SDK 账号</span>
       </button>
+      <button class="nav" data-view="reports" type="button">
+        <svg class="nav-icon" viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10Z"/><path d="M12 8v4"/><path d="M12 16h.01"/></svg>
+        <span>用户举报</span>
+      </button>
       <button class="nav" data-view="catalog" type="button">
         <svg class="nav-icon" viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="12 2 2 7 12 12 22 7 12 2"/><polyline points="2 17 12 22 22 17"/><polyline points="2 12 12 17 22 12"/></svg>
         <span>资源目录</span>
@@ -100,6 +104,27 @@
             <button id="account-search" type="button">查询</button>
           </div>
           <div id="account-list"></div>
+        </div>
+      </section>
+
+      <section id="view-reports" class="view">
+        <div class="title-row">
+          <div>
+            <h1>用户举报</h1>
+            <p>客户端提交的举报事件与原始业务信息</p>
+          </div>
+          <button id="report-refresh" type="button">刷新记录</button>
+        </div>
+        <div class="panel">
+          <div class="search">
+            <input id="report-query" placeholder="角色 ID / 名称 / 内容 / 请求 ID" autocomplete="off">
+            <button id="report-search" type="button">查询</button>
+          </div>
+          <div id="report-summary" class="report-summary" aria-live="polite"></div>
+          <div id="report-list" aria-busy="false">
+            <div class="empty report-empty">打开此页后加载举报历史</div>
+          </div>
+          <div id="report-pagination"></div>
         </div>
       </section>
 
