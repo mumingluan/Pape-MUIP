@@ -1,4 +1,4 @@
-package main
+package app
 
 import (
 	"compress/gzip"
@@ -7,10 +7,11 @@ import (
 	"net/http"
 	"net/http/httptest"
 	"net/url"
-	"os"
 	"path/filepath"
 	"strings"
 	"testing"
+
+	"pape-muip/internal/config"
 )
 
 func TestCatalogProxyAddsLocalizedNameAndUsesInnerAuth(t *testing.T) {
@@ -40,9 +41,9 @@ func TestCatalogProxyAddsLocalizedNameAndUsesInnerAuth(t *testing.T) {
 		t.Fatal(err)
 	}
 	defer language.Close()
-	s := &Server{cfg: Config{AdminUser: "admin", AdminPassword: "secret", LanguageSetID: 1000000000001,
-		SDK:  Peer{BaseURL: upstream.URL, AuthToken: "sdk-secret"},
-		BOOI: map[string]Peer{"500058": {BaseURL: upstream.URL, AuthToken: "inner-secret"}}}, language: language, clients: map[string]*http.Client{}}
+	s := &App{cfg: config.Config{AdminUser: "admin", AdminPassword: "secret", LanguageSetID: 1000000000001,
+		SDK:  config.Peer{BaseURL: upstream.URL, AuthToken: "sdk-secret"},
+		BOOI: map[string]config.Peer{"500058": {BaseURL: upstream.URL, AuthToken: "inner-secret"}}}, language: language, clients: map[string]*http.Client{}}
 	handler := s.router()
 	cookie := loginCookie(t, handler)
 	recorder := httptest.NewRecorder()
@@ -55,7 +56,7 @@ func TestCatalogProxyAddsLocalizedNameAndUsesInnerAuth(t *testing.T) {
 }
 
 func TestHTMLLoginSessionProtectsUIAndAPI(t *testing.T) {
-	s := &Server{cfg: Config{AdminUser: "admin", AdminPassword: "secret", BOOI: map[string]Peer{}}}
+	s := &App{cfg: config.Config{AdminUser: "admin", AdminPassword: "secret", BOOI: map[string]config.Peer{}}}
 	handler := s.router()
 
 	apiRes := httptest.NewRecorder()
@@ -114,7 +115,7 @@ func TestHTMLLoginSessionProtectsUIAndAPI(t *testing.T) {
 }
 
 func TestGinRouterCompressesResponses(t *testing.T) {
-	s := &Server{cfg: Config{AdminUser: "admin", AdminPassword: "secret", BOOI: map[string]Peer{}}}
+	s := &App{cfg: config.Config{AdminUser: "admin", AdminPassword: "secret", BOOI: map[string]config.Peer{}}}
 	handler := s.router()
 	cookie := loginCookie(t, handler)
 	req := httptest.NewRequest(http.MethodGet, "/app.js", nil)
@@ -142,7 +143,7 @@ func TestGinRouterCompressesResponses(t *testing.T) {
 }
 
 func TestGinRouterServesEmbeddedUI(t *testing.T) {
-	s := &Server{cfg: Config{AdminUser: "admin", AdminPassword: "secret"}}
+	s := &App{cfg: config.Config{AdminUser: "admin", AdminPassword: "secret"}}
 	handler := s.router()
 	cookie := loginCookie(t, handler)
 	req := httptest.NewRequest(http.MethodGet, "/", nil)
@@ -183,24 +184,4 @@ func loginCookie(t *testing.T, handler http.Handler) *http.Cookie {
 	}
 	t.Fatal("login did not set a session cookie")
 	return nil
-}
-
-func TestLoadConfigRejectsUnprotectedInnerPeer(t *testing.T) {
-	path := filepath.Join(t.TempDir(), "config.yaml")
-	raw := `admin_user: admin
-admin_password: secret
-sdk_inner:
-  base_url: http://127.0.0.1:18081
-  auth_token: ""
-booi_inner:
-  "500058":
-    base_url: http://127.0.0.1:18082
-    auth_token: protected
-`
-	if err := os.WriteFile(path, []byte(raw), 0o600); err != nil {
-		t.Fatal(err)
-	}
-	if _, err := loadConfig(path); err == nil || !strings.Contains(err.Error(), "sdk_inner.auth_token") {
-		t.Fatalf("unexpected validation result: %v", err)
-	}
 }

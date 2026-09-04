@@ -1,4 +1,4 @@
-package main
+package app
 
 import (
 	"encoding/json"
@@ -70,7 +70,7 @@ type importedState struct {
 	Progress *importedProgress `json:"progress,omitempty"`
 }
 
-func (s *Server) importSyncPlayer(c *gin.Context) {
+func (s *App) importSyncPlayer(c *gin.Context) {
 	serverID, accountID, peer, ok := s.operationTarget(c)
 	if !ok {
 		return

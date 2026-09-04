@@ -1,4 +1,4 @@
-package main
+package app
 
 import (
 	"bytes"
@@ -15,6 +15,8 @@ import (
 	"time"
 
 	"github.com/gin-gonic/gin"
+
+	"pape-muip/internal/config"
 )
 
 type catalogRow struct {
@@ -82,7 +84,7 @@ type selectedTitle struct {
 	Standalone int32 `json:"standalone"`
 }
 
-func (s *Server) fullCatalogPlayer(c *gin.Context) {
+func (s *App) fullCatalogPlayer(c *gin.Context) {
 	serverID, accountID, peer, ok := s.operationTarget(c)
 	if !ok {
 		return
@@ -255,22 +257,22 @@ func boolean(value any) bool {
 	return integer(value) != 0
 }
 
-func (s *Server) operationTarget(c *gin.Context) (string, uint64, Peer, bool) {
+func (s *App) operationTarget(c *gin.Context) (string, uint64, config.Peer, bool) {
 	serverID := c.Param("server")
 	peer, ok := s.cfg.BOOI[serverID]
 	if !ok {
 		c.JSON(http.StatusNotFound, gin.H{"error": "unknown BOOI server"})
-		return "", 0, Peer{}, false
+		return "", 0, config.Peer{}, false
 	}
 	accountID, err := strconv.ParseUint(c.Param("id"), 10, 64)
 	if err != nil || accountID == 0 {
 		c.JSON(http.StatusBadRequest, gin.H{"error": "invalid account id"})
-		return "", 0, Peer{}, false
+		return "", 0, config.Peer{}, false
 	}
 	return serverID, accountID, peer, true
 }
 
-func (s *Server) callPeerJSON(ctx context.Context, key string, peer Peer, method, path string, input, output any) error {
+func (s *App) callPeerJSON(ctx context.Context, key string, peer config.Peer, method, path string, input, output any) error {
 	base, err := url.Parse(strings.TrimRight(peer.BaseURL, "/"))
 	if err != nil {
 		return err

@@ -1,4 +1,4 @@
-package main
+package app
 
 import (
 	"crypto/rand"
@@ -16,7 +16,7 @@ const (
 	sessionLifetime   = 12 * time.Hour
 )
 
-func (s *Server) loginPage(c *gin.Context) {
+func (s *App) loginPage(c *gin.Context) {
 	if token, err := c.Cookie(sessionCookieName); err == nil && s.validSession(token) {
 		c.Redirect(http.StatusSeeOther, "/")
 		return
@@ -24,7 +24,7 @@ func (s *Server) loginPage(c *gin.Context) {
 	s.renderLogin(c, http.StatusOK, "")
 }
 
-func (s *Server) login(c *gin.Context) {
+func (s *App) login(c *gin.Context) {
 	username := c.PostForm("username")
 	password := c.PostForm("password")
 	wantUser := []byte(s.cfg.AdminUser)
@@ -49,7 +49,7 @@ func (s *Server) login(c *gin.Context) {
 	c.Redirect(http.StatusSeeOther, "/")
 }
 
-func (s *Server) logout(c *gin.Context) {
+func (s *App) logout(c *gin.Context) {
 	if token, err := c.Cookie(sessionCookieName); err == nil {
 		s.sessionsMu.Lock()
 		delete(s.sessions, token)
@@ -59,7 +59,7 @@ func (s *Server) logout(c *gin.Context) {
 	c.Redirect(http.StatusSeeOther, "/login")
 }
 
-func (s *Server) requireSession() gin.HandlerFunc {
+func (s *App) requireSession() gin.HandlerFunc {
 	return func(c *gin.Context) {
 		token, err := c.Cookie(sessionCookieName)
 		if err == nil && s.validSession(token) {
@@ -76,7 +76,7 @@ func (s *Server) requireSession() gin.HandlerFunc {
 	}
 }
 
-func (s *Server) newSession() (string, time.Time, error) {
+func (s *App) newSession() (string, time.Time, error) {
 	raw := make([]byte, 32)
 	if _, err := rand.Read(raw); err != nil {
 		return "", time.Time{}, err
@@ -95,7 +95,7 @@ func (s *Server) newSession() (string, time.Time, error) {
 	return token, expires, nil
 }
 
-func (s *Server) validSession(token string) bool {
+func (s *App) validSession(token string) bool {
 	if token == "" {
 		return false
 	}
@@ -110,14 +110,14 @@ func (s *Server) validSession(token string) bool {
 	return ok
 }
 
-func (s *Server) clearSessionCookie(c *gin.Context) {
+func (s *App) clearSessionCookie(c *gin.Context) {
 	http.SetCookie(c.Writer, &http.Cookie{
 		Name: sessionCookieName, Value: "", Path: "/", MaxAge: -1, Expires: time.Unix(1, 0),
 		HttpOnly: true, Secure: c.Request.TLS != nil, SameSite: http.SameSiteStrictMode,
 	})
 }
 
-func (s *Server) renderLogin(c *gin.Context, status int, message string) {
+func (s *App) renderLogin(c *gin.Context, status int, message string) {
 	c.Header("Content-Type", "text/html; charset=utf-8")
 	c.Header("Cache-Control", "no-store")
 	c.Status(status)

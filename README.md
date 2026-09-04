@@ -19,21 +19,27 @@ MUIP 唯一直接读取的数据库是本目录的 `languages.sqlite`，且以 S
 - 玩家“断开连接”会先发送协议原生 `BeKickedReply`，再撤销该账号的临时游戏令牌；
   服务端不直接关闭 TCP，由客户端按正常下线流程退出。
 
-## 启动
+## 构建与运行
 
 1. 确保 SDK `inner_api` 与 BOOI `inner` 已启用。
 2. 复制 `config.example.yaml` 为 `config.yaml`，填写两侧 Inner Token 和 MUIP 管理密码。
-3. 启动：
+3. 从命令入口构建：
 
 ```powershell
-go run . -config .\config.yaml
+go test ./...
+go build -o pape-muip.next.exe .\cmd\pape-muip
 ```
 
-或构建后运行：
+Paper 工作区的生产实例由 WinSW 服务 `MumlPapeMUIP` 管理。替换
+`pape-muip.exe` 后必须通过 Windows 服务重启，不要直接运行 EXE 代替服务。
 
-```powershell
-go build -o pape-muip.exe .
-.\pape-muip.exe -config .\config.yaml
+## 项目结构
+
+```text
+cmd/pape-muip/       可执行程序入口，仅处理命令行参数和启动错误
+internal/app/        Gin 路由、登录会话、Inner API 代理和管理业务
+internal/app/web/    编译进程序的管理后台静态资源
+internal/config/     配置模型、默认值、校验和相对路径解析
 ```
 
 浏览器访问 `http://127.0.0.1:65286`，在登录页输入 `admin_user` / `admin_password`。
