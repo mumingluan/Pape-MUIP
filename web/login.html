@@ -2,7 +2,7 @@
 <html lang="zh-CN">
 <head>
   <meta charset="utf-8">
-  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
   <meta name="color-scheme" content="light dark">
   <title>登录 · Pape MUIP</title>
   <link rel="stylesheet" href="/style.css">
@@ -10,14 +10,26 @@
 <body class="login-page">
   <main class="login-shell">
     <section class="login-card">
-      <div class="login-mark"><span class="brand">PAPE</span><strong>MUIP</strong></div>
+      <div class="login-mark">
+        <div class="brand-wrap">
+          <span class="brand-badge">PAPE</span>
+          <strong class="brand-title">MUIP</strong>
+        </div>
+        <span class="login-badge-sub">Admin Console</span>
+      </div>
       <h1>管理员登录</h1>
-      <p>登录后管理 SDK 账号与 BOOI 玩家数据。</p>
+      <p>管理 SDK 账号与 BOOI 角色游戏状态</p>
       {{if .Error}}<div class="login-error" role="alert">{{.Error}}</div>{{end}}
       <form class="login-form" method="post" action="/login">
-        <label><span>用户名</span><input name="username" autocomplete="username" required autofocus></label>
-        <label><span>密码</span><input name="password" type="password" autocomplete="current-password" required></label>
-        <button class="primary" type="submit">登录</button>
+        <label>
+          <span>用户名</span>
+          <input name="username" autocomplete="username" placeholder="请输入管理员用户名" required autofocus>
+        </label>
+        <label>
+          <span>密码</span>
+          <input name="password" type="password" autocomplete="current-password" placeholder="请输入管理员密码" required>
+        </label>
+        <button class="primary login-submit-btn" type="submit">立即登录</button>
       </form>
     </section>
   </main>
