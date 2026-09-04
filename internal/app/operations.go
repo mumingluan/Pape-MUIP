@@ -336,4 +336,4 @@ func (s *App) callPeerJSON(ctx context.Context, key string, peer config.Peer, me
 	return nil
 }
 
-var errInvalidSyncCapture = errors.New("file is not a decoded SyncUserTotalDataReply capture")
+var errInvalidSyncCapture = errors.New("只能导入 pape-capture 生成的 S2C SyncUserTotalDataReply JSON 文件")

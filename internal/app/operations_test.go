@@ -3,8 +3,10 @@ package app
 import (
 	"database/sql"
 	"encoding/json"
+	"errors"
 	"os"
 	"strconv"
+	"strings"
 	"testing"
 )
 
@@ -45,19 +47,9 @@ func TestParseRealSyncCaptureWhenConfigured(t *testing.T) {
 		t.Fatal(err)
 	}
 	defer file.Close()
-	decoder := json.NewDecoder(file)
-	decoder.UseNumber()
-	var capture struct {
-		Message struct {
-			Name    string         `json:"name"`
-			Decoded map[string]any `json:"decoded"`
-		} `json:"message"`
-	}
-	if err := decoder.Decode(&capture); err != nil {
+	decoded, err := decodeSyncCapture(file)
+	if err != nil {
 		t.Fatal(err)
-	}
-	if capture.Message.Name != "SyncUserTotalDataReply" {
-		t.Fatalf("unexpected message %q", capture.Message.Name)
 	}
 	resourceDB, err := sql.Open("sqlite", resourcePath)
 	if err != nil {
@@ -78,12 +70,37 @@ func TestParseRealSyncCaptureWhenConfigured(t *testing.T) {
 		itemTypes[int32(id)] = int32(rawInt(json.RawMessage(raw), "Type"))
 	}
 	rows.Close()
-	state, _, err := parseSyncState(capture.Message.Decoded, itemTypes, nil)
+	state, _, err := parseSyncState(decoded, itemTypes, nil)
 	if err != nil {
 		t.Fatal(err)
 	}
 	if state.Profile == nil || len(state.Cards) == 0 || len(state.Stages) == 0 {
 		t.Fatalf("real capture was not normalized: %+v", state)
+	}
+}
+
+func TestDecodeSyncCaptureOnlyAcceptsCapturerTotalDataReply(t *testing.T) {
+	valid := `{
+		"timestamp":"2026-08-29T13:34:55Z","frame":8,"direction":"S2C","encrypted":true,
+		"envelope_type":"Respond","wire_size":350048,"plaintext_size":350042,"seq":950745,
+		"err_code":{"number":1,"name":"Success"},
+		"message":{"route":3758184784,"route_hex":"0xe0015950","name":"SyncUserTotalDataReply","payload_size":350022,"decoded":{"Base":{"Level":1}}}
+	}`
+	decoded, err := decodeSyncCapture(strings.NewReader(valid))
+	if err != nil || object(decoded["Base"]) == nil {
+		t.Fatalf("valid capture rejected: decoded=%v err=%v", decoded, err)
+	}
+	invalid := []string{
+		`{"message":{"name":"SyncUserTotalDataReply","decoded":{"Base":{"Level":1}}}}`,
+		strings.Replace(valid, `"direction":"S2C"`, `"direction":"C2S"`, 1),
+		strings.Replace(valid, `"route":3758184784`, `"route":1`, 1),
+		strings.Replace(valid, `"name":"Success"`, `"name":"Unknown"`, 1),
+		valid + `{}`,
+	}
+	for index, input := range invalid {
+		if _, err := decodeSyncCapture(strings.NewReader(input)); !errors.Is(err, errInvalidSyncCapture) {
+			t.Fatalf("invalid capture %d was accepted or returned wrong error: %v", index, err)
+		}
 	}
 }
 

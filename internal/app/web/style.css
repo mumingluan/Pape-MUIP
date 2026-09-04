@@ -351,7 +351,7 @@ p { margin: 0; color: var(--muted); font-size: 13px; }
   min-width: 0;
   max-width: 100%;
   box-sizing: border-box;
-  overflow: hidden;
+  overflow: visible;
 }
 
 #player-detail {
@@ -492,23 +492,58 @@ button.small {
   display: flex;
   align-items: center;
   justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 4px 8px;
+  min-width: 0;
   margin-bottom: 3px;
 }
 
 .record-title b {
   font-size: 14px;
+  flex: 1 1 80px;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.record-badges,
+.player-state-badges {
+  display: inline-flex;
+  align-items: center;
+  justify-content: flex-end;
+  flex-wrap: wrap;
+  gap: 4px;
+  min-width: 0;
+  max-width: 100%;
 }
 
 .record-tag {
+  display: inline-flex;
+  align-items: center;
   font-size: 11px;
   background: var(--field-bg);
   padding: 1px 6px;
   border-radius: 4px;
   color: var(--muted);
   border: 1px solid var(--line);
+  line-height: 1.45;
+  white-space: nowrap;
 }
 
-.record span {
+.record-tag.danger {
+  color: var(--danger);
+  border-color: color-mix(in srgb, var(--danger) 40%, var(--line));
+  background: var(--danger-bg);
+}
+
+.record-tag.warning {
+  color: var(--warning);
+  border-color: color-mix(in srgb, var(--warning) 40%, var(--line));
+  background: var(--warning-bg);
+}
+
+.record > span {
   font-size: 12px;
   color: var(--muted);
 }
@@ -523,6 +558,8 @@ button.small {
 
 /* 玩家详情 Header Card */
 .player-header-card {
+  position: relative;
+  z-index: 4;
   background: var(--panel2);
   border: 1px solid var(--line);
   border-radius: var(--radius-sm);
@@ -531,7 +568,7 @@ button.small {
   min-width: 0;
   max-width: 100%;
   box-sizing: border-box;
-  overflow: hidden;
+  overflow: visible;
 }
 
 .player-identity {
@@ -582,6 +619,12 @@ button.small {
   text-overflow: ellipsis;
   white-space: nowrap;
   max-width: 100%;
+  min-width: 0;
+  flex: 0 1 auto;
+}
+
+.player-state-badges {
+  flex: 0 1 auto;
 }
 
 .player-sub {
@@ -605,6 +648,75 @@ button.small {
   flex-wrap: wrap;
   min-width: 0;
   max-width: 100%;
+}
+
+.identity-menu {
+  position: relative;
+  min-width: 0;
+}
+
+.identity-menu > summary {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 9px;
+  width: 100%;
+  box-sizing: border-box;
+  list-style: none;
+  cursor: pointer;
+  border: 1px solid var(--line-strong);
+  border-radius: 8px;
+  padding: 8px 12px;
+  color: var(--text);
+  background: var(--panel2);
+  font-size: 13px;
+  user-select: none;
+}
+
+.identity-menu > summary::-webkit-details-marker {
+  display: none;
+}
+
+.identity-menu > summary::after {
+  content: "";
+  display: inline-block;
+  width: 6px;
+  height: 6px;
+  margin-inline-start: 0;
+  border-inline-end: 1.5px solid currentColor;
+  border-block-end: 1.5px solid currentColor;
+  transform: translateY(-2px) rotate(45deg);
+}
+
+.identity-menu[open] > summary {
+  border-color: var(--accent);
+  box-shadow: 0 0 0 3px color-mix(in srgb, var(--accent) 16%, transparent);
+}
+
+.identity-menu-popover {
+  position: absolute;
+  z-index: 12;
+  inset-block-start: calc(100% + 7px);
+  inset-inline-end: 0;
+  width: max-content;
+  min-width: 180px;
+  display: grid;
+  gap: 5px;
+  padding: 8px;
+  border: 1px solid var(--line);
+  border-radius: 12px;
+  background: var(--panel);
+  box-shadow: 0 14px 35px rgba(20, 16, 40, .18);
+}
+
+.identity-menu-popover button {
+  width: 100%;
+  text-align: start;
+}
+
+.status-tag.muted {
+  color: var(--muted);
+  border-color: var(--line-strong);
 }
 
 .btn-icon {
@@ -1023,15 +1135,20 @@ dialog.editor-modal {
 .modal-check {
   display: flex;
   align-items: center;
+  justify-content: flex-start;
   gap: 10px;
+  min-height: 36px;
   color: var(--text);
   font-size: 13px;
   cursor: pointer;
 }
 
 .modal-check input {
+  flex: 0 0 18px;
   width: 18px;
   height: 18px;
+  margin: 0;
+  padding: 0;
   accent-color: var(--accent);
   cursor: pointer;
 }
@@ -1342,7 +1459,7 @@ dialog.editor-modal {
     min-height: auto;
     border-radius: var(--radius);
     box-sizing: border-box;
-    overflow-x: hidden;
+    overflow: visible;
     padding: 12px;
   }
   .split.show-detail .mobile-back-bar {
@@ -1356,7 +1473,7 @@ dialog.editor-modal {
     width: 100%;
     max-width: 100%;
     box-sizing: border-box;
-    overflow: hidden;
+    overflow: visible;
   }
   .player-identity {
     gap: 10px;
@@ -1376,6 +1493,7 @@ dialog.editor-modal {
   }
   .player-name-row {
     gap: 6px;
+    align-items: flex-start;
   }
   .player-name-row h2 {
     font-size: 16px;
@@ -1383,6 +1501,10 @@ dialog.editor-modal {
     text-overflow: ellipsis;
     white-space: nowrap;
     max-width: 100%;
+  }
+  .player-state-badges {
+    width: 100%;
+    justify-content: flex-start;
   }
   .player-sub {
     font-size: 11px;

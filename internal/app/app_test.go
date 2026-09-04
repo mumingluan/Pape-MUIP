@@ -157,10 +157,13 @@ func TestGinRouterServesEmbeddedUI(t *testing.T) {
 	scriptReq.AddCookie(cookie)
 	scriptRes := httptest.NewRecorder()
 	handler.ServeHTTP(scriptRes, scriptReq)
-	for _, marker := range []string{"createSearchSelect", "PAGE_SIZE=100", "pagedRows", "resourceOptions('items'", "resourceOptions('cards'", "resourceOptions('stages'", "resourceOptions('tasks'"} {
+	for _, marker := range []string{"createSearchSelect", "PAGE_SIZE=100", "pagedRows", "resourceOptions('items'", "resourceOptions('cards'", "resourceOptions('stages'", "resourceOptions('tasks'", "players-sequence", "movePlayer", "hardDeletePlayer", "restoreAccount", "record-badges", "p.deleted_at", "p.banned"} {
 		if scriptRes.Code != http.StatusOK || !strings.Contains(scriptRes.Body.String(), marker) {
 			t.Fatalf("embedded searchable selectors missing %q: response=%d", marker, scriptRes.Code)
 		}
+	}
+	if strings.Contains(scriptRes.Body.String(), "disabled=isDeleted") {
+		t.Fatal("soft-deleted players still disable GM controls")
 	}
 }
 

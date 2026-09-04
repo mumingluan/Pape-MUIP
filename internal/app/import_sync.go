@@ -70,6 +70,61 @@ type importedState struct {
 	Progress *importedProgress `json:"progress,omitempty"`
 }
 
+const syncUserTotalDataReplyRoute uint32 = 0xe0015950
+
+type syncCaptureEnvelope struct {
+	Timestamp     string `json:"timestamp"`
+	Frame         int64  `json:"frame"`
+	Direction     string `json:"direction"`
+	EnvelopeType  string `json:"envelope_type"`
+	WireSize      int64  `json:"wire_size"`
+	PlaintextSize int64  `json:"plaintext_size"`
+	Seq           uint32 `json:"seq"`
+	ErrCode       struct {
+		Number int32  `json:"number"`
+		Name   string `json:"name"`
+	} `json:"err_code"`
+	Message struct {
+		Route       uint32         `json:"route"`
+		RouteHex    string         `json:"route_hex"`
+		Name        string         `json:"name"`
+		PayloadSize int64          `json:"payload_size"`
+		Decoded     map[string]any `json:"decoded"`
+	} `json:"message"`
+}
+
+func decodeSyncCapture(reader io.Reader) (map[string]any, error) {
+	decoder := json.NewDecoder(reader)
+	decoder.UseNumber()
+	var capture syncCaptureEnvelope
+	if err := decoder.Decode(&capture); err != nil {
+		return nil, fmt.Errorf("%w：JSON 解析失败：%v", errInvalidSyncCapture, err)
+	}
+	var trailing any
+	if err := decoder.Decode(&trailing); err != io.EOF {
+		if err == nil {
+			return nil, fmt.Errorf("%w：文件包含多个 JSON 值", errInvalidSyncCapture)
+		}
+		return nil, fmt.Errorf("%w：JSON 结尾无效：%v", errInvalidSyncCapture, err)
+	}
+	if strings.TrimSpace(capture.Timestamp) == "" || capture.Frame <= 0 || capture.WireSize <= 0 || capture.PlaintextSize <= 0 || capture.Message.PayloadSize <= 0 {
+		return nil, fmt.Errorf("%w：缺少 pape-capture 帧元数据", errInvalidSyncCapture)
+	}
+	if capture.Direction != "S2C" || capture.EnvelopeType != "Respond" {
+		return nil, fmt.Errorf("%w：必须是服务端 Respond 包", errInvalidSyncCapture)
+	}
+	if capture.ErrCode.Number != 1 || capture.ErrCode.Name != "Success" {
+		return nil, fmt.Errorf("%w：Reply 不是 Success", errInvalidSyncCapture)
+	}
+	if capture.Message.Name != "SyncUserTotalDataReply" || capture.Message.Route != syncUserTotalDataReplyRoute || !strings.EqualFold(capture.Message.RouteHex, "0xe0015950") {
+		return nil, fmt.Errorf("%w：消息名或路由不匹配", errInvalidSyncCapture)
+	}
+	if capture.Message.Decoded == nil || object(capture.Message.Decoded["Base"]) == nil {
+		return nil, fmt.Errorf("%w：缺少 decoded.Base", errInvalidSyncCapture)
+	}
+	return capture.Message.Decoded, nil
+}
+
 func (s *App) importSyncPlayer(c *gin.Context) {
 	serverID, accountID, peer, ok := s.operationTarget(c)
 	if !ok {
@@ -82,20 +137,9 @@ func (s *App) importSyncPlayer(c *gin.Context) {
 		return
 	}
 	defer file.Close()
-	decoder := json.NewDecoder(io.LimitReader(file, 64<<20))
-	decoder.UseNumber()
-	var capture struct {
-		Message struct {
-			Name    string         `json:"name"`
-			Decoded map[string]any `json:"decoded"`
-		} `json:"message"`
-	}
-	if err := decoder.Decode(&capture); err != nil {
+	decoded, err := decodeSyncCapture(io.LimitReader(file, 64<<20))
+	if err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
-		return
-	}
-	if capture.Message.Name != "SyncUserTotalDataReply" || capture.Message.Decoded == nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": errInvalidSyncCapture.Error()})
 		return
 	}
 	var itemCatalog, levelCatalog catalogResponse
@@ -113,7 +157,7 @@ func (s *App) importSyncPlayer(c *gin.Context) {
 			itemTypes[id] = row.AssetType
 		}
 	}
-	state, grants, err := parseSyncState(capture.Message.Decoded, itemTypes, levelCatalog.Rows)
+	state, grants, err := parseSyncState(decoded, itemTypes, levelCatalog.Rows)
 	if err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
 		return
