@@ -19,6 +19,10 @@
         <span class="server-tag">BOOI</span>
         <select id="server" aria-label="选择 BOOI 服务实例"></select>
       </div>
+      <label class="language-picker">
+        <span class="sr-only">界面语言</span>
+        <select id="language-select" aria-label="界面语言"></select>
+      </label>
       <span id="health" class="pill status-pill">检查中</span>
       <form class="logout-form" method="post" action="/logout">
         <button class="small logout-btn" type="submit" title="退出登录">退出</button>
@@ -42,6 +46,10 @@
       <button class="nav" data-view="catalog" type="button">
         <svg class="nav-icon" viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="12 2 2 7 12 12 22 7 12 2"/><polyline points="2 17 12 22 22 17"/><polyline points="2 12 12 17 22 12"/></svg>
         <span>资源目录</span>
+      </button>
+      <button class="nav" data-view="mail" type="button">
+        <svg class="nav-icon" viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="5" width="18" height="14" rx="2"/><path d="m3 7 9 6 9-6"/></svg>
+        <span>邮件中心</span>
       </button>
       <div class="nav-note">所有业务写操作经由 SDK / BOOI Inner API 执行。名称来自只读 languages.sqlite。</div>
     </nav>
@@ -151,6 +159,46 @@
           </div>
           <p class="hint">一键发放需要先在“玩家数据”中选择目标玩家。</p>
           <div id="catalog-list"></div>
+        </div>
+      </section>
+
+      <section id="view-mail" class="view">
+        <div class="title-row">
+          <div>
+            <h1>邮件中心</h1>
+            <p>使用资源模板或自定义内容，批量投放到玩家邮箱</p>
+          </div>
+          <div class="actions"><button id="mail-refresh" type="button">刷新模板</button></div>
+        </div>
+        <div class="mail-layout">
+          <section class="panel mail-recipients">
+            <div class="panel-heading"><div><h2>收件人</h2><p class="hint">从当前 BOOI 服务选择一个或多个玩家</p></div><button id="mail-select-all" class="small" type="button">全选</button></div>
+            <div class="search"><input id="mail-player-query" placeholder="搜索 UID / OpenID / 名字" autocomplete="off"><button id="mail-player-search" type="button">查询</button></div>
+            <div id="mail-player-list" class="mail-player-list"></div>
+            <div id="mail-recipient-count" class="mail-recipient-count">已选择 0 名玩家</div>
+          </section>
+          <section class="panel mail-composer">
+            <div class="panel-heading"><div><h2>撰写邮件</h2><p class="hint">模板内容按当前界面语言显示并随邮件保存</p></div><span id="mail-template-status" class="pill status-pill">读取中</span></div>
+            <label class="modal-field"><span>邮件来源</span><select id="mail-source"><option value="template">资源模板</option><option value="custom">自定义邮件</option></select></label>
+            <label id="mail-template-field" class="modal-field"><span>模板</span><div id="mail-template-search"></div></label>
+            <div id="mail-template-preview" class="mail-preview"></div>
+            <div id="mail-custom-fields" hidden>
+              <label class="modal-field"><span>标题</span><input id="mail-title" maxlength="120" placeholder="输入邮件标题"></label>
+              <label class="modal-field"><span>正文</span><textarea id="mail-content" rows="7" maxlength="4000" placeholder="输入邮件正文"></textarea></label>
+              <label class="modal-field"><span>署名</span><input id="mail-sign" maxlength="120" placeholder="例如：运营团队"></label>
+            </div>
+            <div class="mail-options">
+              <label class="modal-field"><span>有效期（小时，留空使用模板值）</span><input id="mail-ttl" type="number" min="0" step="1" placeholder="例如 168"></label>
+              <label class="modal-check"><input id="mail-auto-collect" type="checkbox"><span>附件自动领取</span></label>
+            </div>
+            <div class="mail-reward-editor-wrap">
+              <div class="mail-editor-heading"><span>附件资源</span><button id="mail-add-reward" class="small" type="button">+ 添加资源</button></div>
+              <div id="mail-reward-editor" class="mail-reward-editor"></div>
+              <details class="mail-json-details"><summary>高级 JSON 编辑</summary><textarea id="mail-rewards" rows="4" placeholder='[{"type":1,"id":1,"num":100}]'></textarea><button id="mail-json-apply" class="small" type="button">应用 JSON</button></details>
+            </div>
+            <button id="mail-send" class="primary mail-send" type="button">发送给已选玩家</button>
+            <p id="mail-send-status" class="hint" aria-live="polite"></p>
+          </section>
         </div>
       </section>
     </main>

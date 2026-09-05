@@ -12,7 +12,9 @@ MUIP 唯一直接读取的数据库是本目录的 `languages.sqlite`，且以 S
 - 在玩家页上传解码后的 `SyncUserTotalDataReply` 抓包，由 MUIP 解析成标准化行数据和普通 ID 列表后导入；
 - 由 MUIP 遍历当前 BOOI 资源目录并生成普通发放列表，将账号补齐为当前资源版本的完整账号；
 - 资产、思念、皮肤、任务、关卡、引导、系统解锁、男主羁绊和主线进度管理；
-- 从 BOOI 资源目录检索思念、皮肤、物品等，并通过 `languages.sqlite` 显示中文名；
+- 从 BOOI 资源目录检索思念、皮肤、物品等，并通过 `languages.sqlite` 显示当前语言的本地化名称；
+- 邮件中心：选择多个玩家，使用 `SystemMail` 资源模板或撰写自定义邮件，设置附件、有效期和自动领取后批量投放；在线玩家会收到原生邮件更新推送；
+- 界面语言与资源集根据浏览器语言自动选择，也可以在右上角切换 `languages.sqlite` 中有文本数据的资源集；资源目录名称和邮件模板文本使用同一资源集解析。数据库会保留尚未展开的资源集来源记录，但不会把它们显示为可选语言；
 - 使用独立 HTML 登录页和 HttpOnly/SameSite 会话 Cookie，界面自动跟随系统深浅色；
 - BOOI GM 写入成功后尽可能向在线客户端发送协议原生 UpdateReply，API 返回
   `notified` 表示实际通知的在线会话数。没有独立增量协议的状态由下次 Sync 恢复。
@@ -50,7 +52,7 @@ internal/config/     配置模型、默认值、校验和相对路径解析
 MUIP 使用以下新增管理前缀：
 
 - SDK：`/inner/v1/admin/accounts`
-- BOOI：`/inner/v1/admin/players`、`/inner/v1/admin/catalog`；批量写入使用
+- BOOI：`/inner/v1/admin/players`、`/inner/v1/admin/catalog`、`/inner/v1/admin/mail/templates`、`/inner/v1/admin/mail/send`；批量写入使用
   `/players/:id/state` 和 `/players/:id/grants`，BOOI 不提供 complete 策略接口。
 
 这些接口与现有 Inner API 共用 Bearer Token，未挂载到公共 SDK/游戏 HTTP 路由。

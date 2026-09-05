@@ -23,7 +23,6 @@ type Config struct {
 	AdminUser     string          `yaml:"admin_user"`
 	AdminPassword string          `yaml:"admin_password"`
 	LanguageDB    string          `yaml:"language_db"`
-	LanguageSetID int64           `yaml:"language_set_id"`
 	SDK           Peer            `yaml:"sdk_inner"`
 	BOOI          map[string]Peer `yaml:"booi_inner"`
 	BaseDir       string          `yaml:"-"`
@@ -53,9 +52,6 @@ func Load(path string) (*Config, error) {
 	}
 	if cfg.LanguageDB == "" {
 		cfg.LanguageDB = "languages.sqlite"
-	}
-	if cfg.LanguageSetID == 0 {
-		cfg.LanguageSetID = 1000000000001
 	}
 	if err := validatePeer("sdk_inner", cfg.SDK); err != nil {
 		return nil, err

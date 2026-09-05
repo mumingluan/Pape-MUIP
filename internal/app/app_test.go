@@ -41,7 +41,7 @@ func TestCatalogProxyAddsLocalizedNameAndUsesInnerAuth(t *testing.T) {
 		t.Fatal(err)
 	}
 	defer language.Close()
-	s := &App{cfg: config.Config{AdminUser: "admin", AdminPassword: "secret", LanguageSetID: 1000000000001,
+	s := &App{cfg: config.Config{AdminUser: "admin", AdminPassword: "secret",
 		SDK:  config.Peer{BaseURL: upstream.URL, AuthToken: "sdk-secret"},
 		BOOI: map[string]config.Peer{"500058": {BaseURL: upstream.URL, AuthToken: "inner-secret"}}}, language: language, clients: map[string]*http.Client{}}
 	handler := s.router()
@@ -82,7 +82,7 @@ func TestReportProxyAddsLocalizedMetadata(t *testing.T) {
 		t.Fatal(err)
 	}
 	defer language.Close()
-	s := &App{cfg: config.Config{AdminUser: "admin", AdminPassword: "secret", LanguageSetID: 1000000000001,
+	s := &App{cfg: config.Config{AdminUser: "admin", AdminPassword: "secret",
 		SDK: config.Peer{BaseURL: upstream.URL, AuthToken: "sdk-secret"}}, language: language, clients: map[string]*http.Client{}}
 	handler := s.router()
 	cookie := loginCookie(t, handler)

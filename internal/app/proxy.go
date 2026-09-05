@@ -21,7 +21,8 @@ func (s *App) sdkProxy(c *gin.Context) {
 	path := strings.TrimPrefix(c.Param("path"), "/")
 	var transform func([]byte) []byte
 	if path == "reports" {
-		transform = s.localizeReports
+		setID := s.languageSetID(c)
+		transform = func(data []byte) []byte { return s.localizeReportsIn(data, setID) }
 	}
 	s.proxy(c, "sdk", s.cfg.SDK, "/inner/v1/admin/"+path, transform)
 }
@@ -36,7 +37,11 @@ func (s *App) booiProxy(c *gin.Context) {
 	path := strings.TrimPrefix(c.Param("path"), "/")
 	var transform func([]byte) []byte
 	if strings.HasPrefix(path, "catalog/") {
-		transform = s.localizeCatalog
+		setID := s.languageSetID(c)
+		transform = func(data []byte) []byte { return s.localizeCatalogIn(data, setID) }
+	} else if path == "mail/templates" {
+		setID := s.languageSetID(c)
+		transform = func(data []byte) []byte { return s.localizeMailTemplates(data, setID) }
 	}
 	s.proxy(c, "booi:"+serverID, peer, "/inner/v1/admin/"+path, transform)
 }

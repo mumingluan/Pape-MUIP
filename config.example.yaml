@@ -2,7 +2,6 @@ listen: "0.0.0.0:65286"
 admin_user: "admin"
 admin_password: "replace-with-a-long-random-password"
 language_db: "./languages.sqlite"
-language_set_id: 1000000000001
 
 sdk_inner:
   base_url: "http://127.0.0.1:65281"

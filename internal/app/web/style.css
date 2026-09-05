@@ -1694,3 +1694,105 @@ dialog.editor-modal {
   from { transform: translateY(100%); }
   to { transform: translateY(0); }
 }
+
+.language-picker select {
+  min-width: 128px;
+  max-width: 210px;
+  border: 1px solid var(--line);
+  border-radius: 999px;
+  padding: 8px 30px 8px 12px;
+  background: var(--panel);
+  color: var(--text);
+  font: inherit;
+}
+.sr-only {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  border: 0;
+}
+.mail-layout {
+  display: grid;
+  grid-template-columns: minmax(280px, .82fr) minmax(420px, 1.18fr);
+  gap: 16px;
+  align-items: start;
+}
+.mail-layout .panel { min-width: 0; }
+.panel-heading {
+  display: flex;
+  justify-content: space-between;
+  gap: 12px;
+  align-items: flex-start;
+  margin-bottom: 14px;
+}
+.panel-heading h2 { margin: 0 0 4px; font-size: 16px; }
+.panel-heading .hint { margin: 0; }
+.mail-player-list {
+  display: grid;
+  gap: 7px;
+  max-height: 520px;
+  overflow: auto;
+  margin-top: 12px;
+}
+.mail-player-option {
+  display: flex;
+  gap: 10px;
+  align-items: center;
+  padding: 9px 10px;
+  border: 1px solid transparent;
+  border-radius: 10px;
+  cursor: pointer;
+  background: var(--surface);
+  transition: border-color .16s ease, background .16s ease, transform .16s ease;
+}
+.mail-player-option:hover { border-color: var(--line-strong, var(--line)); transform: translateY(-1px); }
+.mail-player-option:has(input:checked) { border-color: color-mix(in srgb, var(--accent) 55%, var(--line)); background: color-mix(in srgb, var(--accent) 10%, var(--surface)); }
+.mail-player-option input { width: 16px; height: 16px; accent-color: var(--accent); flex: 0 0 auto; }
+.mail-player-option span { min-width: 0; }
+.mail-player-option strong, .mail-player-option small { display: block; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.mail-player-option small { color: var(--muted); margin-top: 2px; }
+.mail-recipient-count { margin-top: 12px; color: var(--muted); font-size: 12px; }
+.mail-composer { display: grid; gap: 12px; }
+.mail-composer .modal-field { margin: 0; }
+.mail-preview {
+  border: 1px solid var(--line);
+  border-radius: 14px;
+  padding: 14px;
+  background: var(--surface);
+  min-height: 88px;
+}
+.mail-preview strong, .mail-preview p, .mail-preview small { display: block; }
+.mail-preview p { margin: 8px 0; white-space: pre-wrap; line-height: 1.55; }
+.mail-preview small { color: var(--muted); }
+.mail-reward-list { margin: 10px 0 0; padding-left: 18px; color: var(--muted); font-size: 12px; }
+.mail-reward-list li { margin: 3px 0; }
+.mail-options { display: grid; grid-template-columns: 1fr auto; gap: 12px; align-items: end; }
+.mail-send { width: 100%; min-height: 44px; }
+.mail-template-control { position: relative; }
+#mail-template-search .modal-search-select { width: 100%; }
+#mail-template-search .mail-template-control { width: 100%; box-sizing: border-box; }
+.mail-template-control .modal-search-menu { width: 100%; z-index: 5; }
+.mail-reward-editor-wrap { display: grid; gap: 9px; }
+.mail-editor-heading { display: flex; justify-content: space-between; align-items: center; font-size: 13px; font-weight: 700; }
+.mail-reward-editor { display: grid; gap: 8px; }
+.mail-reward-row { display: grid; grid-template-columns: minmax(0, 1fr) 108px 34px; gap: 8px; align-items: center; }
+.mail-reward-row .modal-search-select { min-width: 0; }
+.mail-reward-row .modal-search-select input { width: 100%; }
+.mail-reward-row input[type=number] { width: 100%; }
+.mail-reward-remove { width: 34px; height: 34px; padding: 0; border-radius: 9px; }
+.mail-json-details { color: var(--muted); font-size: 12px; }
+.mail-json-details textarea { display: block; width: 100%; margin: 8px 0; box-sizing: border-box; font-family: ui-monospace, SFMono-Regular, Consolas, monospace; font-size: 12px; }
+
+@media (max-width: 900px) {
+  .mail-layout { grid-template-columns: 1fr; }
+  .mail-player-list { max-height: 300px; }
+}
+@media (max-width: 640px) {
+  .language-picker select { min-width: 0; width: 42px; color: transparent; padding-left: 9px; }
+  .mail-options { grid-template-columns: 1fr; }
+}

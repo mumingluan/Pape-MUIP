@@ -89,6 +89,7 @@ func (s *App) router() *gin.Engine {
 	protected.POST("/api/operations/booi/:server/players/:id/full-catalog", s.fullCatalogPlayer)
 	protected.POST("/api/operations/booi/:server/players/:id/import-sync", s.importSyncPlayer)
 	protected.GET("/api/language/:id", s.languageLookup)
+	protected.GET("/api/languages", s.languages)
 	router.NoRoute(s.requireSession(), gin.WrapH(http.FileServer(publicFiles)))
 	return router
 }
