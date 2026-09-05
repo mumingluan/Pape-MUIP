@@ -200,7 +200,7 @@ func TestGinRouterServesEmbeddedUI(t *testing.T) {
 	scriptReq.AddCookie(cookie)
 	scriptRes := httptest.NewRecorder()
 	handler.ServeHTTP(scriptRes, scriptReq)
-	for _, marker := range []string{"createSearchSelect", "PAGE_SIZE=100", "pagedRows", "resourceOptions('items'", "resourceOptions('cards'", "resourceOptions('stages'", "resourceOptions('tasks'", "players-sequence", "movePlayer", "hardDeletePlayer", "restoreAccount", "record-badges", "p.deleted_at", "p.banned", "datetime-local", "permanent", "timed", "zh-cn", "zh-tw", "jp", "ko"} {
+	for _, marker := range []string{"createSearchSelect", "PAGE_SIZE=100", "pagedRows", "resourceOptions('items'", "resourceOptions('cards'", "resourceOptions('stages'", "resourceOptions('tasks'", "players-sequence", "movePlayer", "hardDeletePlayer", "restoreAccount", "restorePlayer", "可选", "record-badges", "p.deleted_at", "p.banned", "datetime-local", "permanent", "timed", "zh-cn", "zh-tw", "jp", "ko"} {
 		if scriptRes.Code != http.StatusOK || !strings.Contains(scriptRes.Body.String(), marker) {
 			t.Fatalf("embedded searchable selectors missing %q: response=%d", marker, scriptRes.Code)
 		}
